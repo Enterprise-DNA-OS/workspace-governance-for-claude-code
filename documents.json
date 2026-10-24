@@ -1,11 +1,44 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
+    "name": "governance-pack",
+    "title": "Workspace governance review pack",
+    "for_each": "select id,code from tenants order by code",
+    "file": "code",
+    "sections": [
+      {
+        "title": "Review scope and internal thresholds",
+        "sql": "select code,name,jurisdiction,stale_days,refresh_days from tenants where id=$1"
+      },
+      {
+        "title": "Source evidence",
+        "sql": "select source_on,source_name,row_count,imported_by from current_snapshots where tenant_id=$1"
+      },
+      {
+        "title": "Findings",
+        "note": "Findings flag records for review. They do not establish legal compliance or change Microsoft settings.",
+        "sql": "select external_id,name,rule,finding from governance_findings where tenant_id=$1 order by external_id,rule"
+      },
+      {
+        "title": "Review decisions",
+        "sql": "select external_id,name,kind,reviewer,due_on,status,decision,current_snapshot,decision_evidence,completion_evidence from review_register where tenant_id=$1 order by created_at"
+      }
+    ]
+  },
+  {
+    "name": "decision-record",
+    "title": "Workspace review decision record",
+    "for_each": "select id,name from review_register order by id",
     "file": "name",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      {
+        "title": "Imported workspace",
+        "sql": "select external_id,name,source_on,legal_hold,current_snapshot from review_register where id=$1"
+      },
+      {
+        "title": "Review and evidence",
+        "note": "Completion is an operator-reported verification of work performed elsewhere. This system has no live Microsoft connection.",
+        "sql": "select kind,reviewer,due_on,status,decision,decision_evidence,decided_by,completion_evidence,completed_by from review_register where id=$1"
+      }
     ]
   }
 ]

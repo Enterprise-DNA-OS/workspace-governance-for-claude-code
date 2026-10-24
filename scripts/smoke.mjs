@@ -1,0 +1,71 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+import ExcelJS from 'exceljs';
+import {getDb,REPO_ROOT} from './lib/db.mjs';
+import {migrate} from './migrate.mjs';
+import {seed} from './seed.mjs';
+import {run,commands,loadRows,parseArgs} from './governance.mjs';
+import {parseCsv} from './lib/csv.mjs';
+const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'workspace-governance-'));
+process.env.DATABASE_URL=process.env.TEST_DATABASE_URL||'';process.env.DATA_DIR=path.join(tmp,'db');process.env.OUTPUT_DIR=tmp;
+let db=await getDb(),checks=0;const exercised=new Set();
+const eq=(a,b)=>{assert.deepEqual(a,b);checks++;},ok=x=>{assert.ok(x);checks++;};
+const call=(c,o={},args=[])=>{exercised.add(c);return run(db,c,{tenant:'DEMO',...o},args);};
+const fails=async(c,o,re,args=[])=>{await assert.rejects(()=>call(c,o,args),re);checks++;};
+const now=new Date().toISOString().slice(0,10),writer={actor:'Operator'};
+try{
+ if(db.mode==='postgres')eq((await db.query("select tablename from pg_tables where schemaname='public'")).length,0);
+ await migrate(db);eq((await migrate(db)).ran,[]);await seed(db);const before=await db.query('select * from workspaces order by id');await seed(db);eq(await db.query('select * from workspaces order by id'),before);
+ eq((await call('help')).length,commands.length);eq((await call('tenants')).length,2);eq((await call('list')).length,5);eq((await call('list',{tenant:'SOUTH'})).length,1);await fails('list',{tenant:undefined},/Required tenant/);
+ eq((await call('owner-gaps')).map(x=>x.external_id),['SITE-02']);eq((await call('inactive')).length,3);eq((await call('external-sharing')).length,3);eq((await call('retention-due')).length,3);
+ const rules=(await call('compliance')).map(x=>x.rule);ok(rules.includes('HOLD_CHECK'));ok(rules.includes('SENSITIVE_EXTERNAL'));ok((await call('attention')).some(x=>x.rule==='REVIEW_OVERDUE'));ok((await call('compliance',{tenant:'SOUTH'})).some(x=>x.rule==='SOURCE_STALE'));
+ eq((await call('summary')).map(x=>Number(x.workspaces)),[1,2,2]);eq((await call('snapshots')).length,1);eq((await call('show',{ref:'client planning'}))[0].external_id,'TEAM-03');await fails('show',{ref:'client'},/Ambiguous/);await fails('show',{tenant:'SOUTH',ref:'SITE-02'},/No matching/);
+ eq((await call('show',{ref:'30000000-0000-4000-8000-000000000003'}))[0].external_id,'TEAM-03');eq((await call('changes')).length,0);eq((await call('weekly-review')).summary.length,3);
+ await fails('create-tenant',{code:'BAD',name:'Bad',jurisdiction:'NZ'},/actor/);await fails('create-tenant',{code:'lower',name:'Bad',jurisdiction:'NZ',...writer},/uppercase/);
+ await call('create-tenant',{code:'IMPORT',name:'Imported review scope',jurisdiction:'AU',...writer});ok((await call('attention',{tenant:'IMPORT'})).some(x=>x.rule==='NO_SNAPSHOT'));
+ await call('configure',{'stale-days':'120','refresh-days':'20',reason:'Internal review policy',...writer});eq((await call('tenants')).find(x=>x.code==='DEMO').stale_days,120);await fails('configure',{'stale-days':'0',reason:'No',...writer},/Invalid/);await fails('configure',{'stale-days':'90',...writer},/reason/);
+ const imp={tenant:'IMPORT',file:path.join(REPO_ROOT,'fixtures/rencore-workspaces.csv'),'source-on':now,expected:'3',...writer};
+ eq((await call('import',{...imp,'dry-run':true},['rencore']))[0].status,'validated');eq((await call('list',{tenant:'IMPORT'})).length,0);
+ const csv=fs.readFileSync(imp.file,'utf8');const bad=path.join(tmp,'bad.csv');
+ for(const [content,re] of [[csv.replace('2026-01-01','2026-02-30'),/Invalid date/],[csv.replace('anonymous','anything'),/sharing must/],[csv+'R-01,Duplicate,Teams,Owner,2026-01-01,internal,internal,2027-01-01,no\n',/Duplicate ID/],[csv.replace('R-03,','R-02,'),/Duplicate ID/],[csv.replace('2026-01-01','2099-01-01'),/Activity after/]]){
+ fs.writeFileSync(bad,content);await fails('import',{...imp,file:bad},re,['rencore']);eq((await call('snapshots',{tenant:'IMPORT'})).length,0);}
+ await fails('import',{...imp,expected:'4'},/reconciliation/,['rencore']);await fails('import',{...imp,'source-on':'2099-01-01'},/future/,['rencore']);await fails('import',imp,/import rencore/,['other']);
+ eq((await call('import',imp,['rencore']))[0].rows,3);eq((await call('import',imp,['rencore']))[0].status,'unchanged');eq((await call('snapshots',{tenant:'IMPORT'})).length,1);
+ const wb=new ExcelJS.Workbook();const ws=wb.addWorksheet('Workspaces');for(const row of [csv.split('\n')[0].split(','),...parseCsv(csv).map(x=>Object.values(x))])ws.addRow(row);const xlsx=path.join(tmp,'source.xlsx');await wb.xlsx.writeFile(xlsx);
+ eq((await call('import',{...imp,file:xlsx},['rencore']))[0].status,'unchanged');ws.getCell('B2').value={formula:'1+1',result:2};await wb.xlsx.writeFile(xlsx);await assert.rejects(()=>loadRows(xlsx),/plain values/);checks++;
+ ws.getCell('B2').value='New name';wb.addWorksheet('Other');await wb.xlsx.writeFile(xlsx);await assert.rejects(()=>loadRows(xlsx),/multiple sheets/);checks++;
+ eq((await loadRows(xlsx,'Workspaces')).length,3);
+ const rid=(await call('open-review',{ref:'SITE-02',kind:'retention',reviewer:'Reviewer','due-on':now,...writer}))[0].id;
+ await fails('open-review',{ref:'SITE-02',kind:'retention',reviewer:'Reviewer','due-on':now,...writer},/unique|duplicate/);
+ await fails('decide',{review:rid,decision:'archive',evidence:'Not allowed',actor:'Reviewer'},/hold/);
+ await fails('decide',{review:rid,decision:'retain',evidence:'Evidence',...writer},/differ/);
+ await fails('decide',{review:rid,decision:'retain',evidence:'Evidence',actor:'Unassigned'},/assigned/);
+ await fails('decide',{tenant:'SOUTH',review:rid,decision:'retain',evidence:'Evidence',actor:'Reviewer'},/No matching/);
+ await call('decide',{review:rid,decision:'retain',evidence:'Hold confirmed in policy register',actor:'Reviewer'});
+ await fails('complete',{review:rid,evidence:'Self',actor:'Reviewer'},/differ/);await fails('complete',{review:rid,actor:'Verifier'},/evidence/);
+ await call('complete',{review:rid,evidence:'Verified hold and permissions in admin centre; reference 17',actor:'Verifier'});eq((await call('reviews')).find(x=>x.id===rid).status,'complete');
+ await call('reopen',{review:rid,reason:'Review amended evidence',...writer});eq((await call('reviews')).find(x=>x.id===rid).decision,null);
+ const old=(await call('open-review',{tenant:'IMPORT',ref:'R-01',kind:'sharing',reviewer:'Reviewer','due-on':now,...writer}))[0].id;
+ fs.writeFileSync(bad,csv.replace('Client, advisory','<script>test</script>'));
+ await call('import',{...imp,file:bad},['rencore']);eq((await call('changes',{tenant:'IMPORT'})).map(x=>x.field),['name']);
+ await fails('decide',{tenant:'IMPORT',review:old,decision:'restrict',evidence:'Old source',actor:'Reviewer'},/older snapshot/);
+ const stale=(await call('open-review',{tenant:'SOUTH',ref:'TEAM-01',kind:'sharing',reviewer:'Reviewer','due-on':now,...writer}))[0].id;
+ await fails('decide',{tenant:'SOUTH',review:stale,decision:'retain',evidence:'Stale',actor:'Reviewer'},/stale/);
+ await call('log',{note:'Monday review complete; no tenant settings changed',...writer});ok((await call('activity')).length>=6);
+ for(const [c,o] of [['draft-owner',{ref:'SITE-02'}],['draft-decision',{review:rid}]]){const file=(await call(c,o))[0].file;ok(fs.readFileSync(file,'utf8').includes('Draft for human review'));}
+ const out=path.join(tmp,'snapshot.json');await call('export',{tenant:'IMPORT',file:out});const snapshot=JSON.parse(fs.readFileSync(out));eq(snapshot.tenant.code,'IMPORT');eq(snapshot.workspaces.length,6);eq(snapshot.snapshots.length,2);ok(snapshot.reviews.every(x=>x.tenant_id===snapshot.tenant.id));await fails('export',{file:out},/EEXIST/);
+ const exported=path.join(tmp,'snapshot.csv');await call('export',{tenant:'IMPORT',file:exported});eq(parseCsv(fs.readFileSync(exported,'utf8')).length,3);
+ await call('create-tenant',{code:'ROUNDTRIP',name:'Roundtrip',jurisdiction:'NZ',...writer});await call('import',{...imp,tenant:'ROUNDTRIP',file:exported},['rencore']);eq((await call('show',{tenant:'ROUNDTRIP',ref:'R-01'}))[0].name,'<script>test</script>');
+ // Unknown values stay unknown and never become a clean record.
+ const unknown=path.join(tmp,'unknown.csv');fs.writeFileSync(unknown,'ID,Name,Service\nUNKNOWN,Unknown values,Teams\n');await call('create-tenant',{code:'UNKNOWN',name:'Unknown data',jurisdiction:'NZ',...writer});await call('import',{...imp,tenant:'UNKNOWN',file:unknown,expected:'1'},['rencore']);eq((await call('compliance',{tenant:'UNKNOWN'})).length,6);
+ assert.throws(()=>parseCsv('a,a\n1,2'),/unique/);checks++;assert.throws(()=>parseCsv('a,b\n1,"bad'),/unclosed/);checks++;eq(parseCsv('\ufeffa,b\r\n1,"two\nlines"\r\n')[0].b,'two\nlines');assert.throws(()=>parseArgs(['list','--tenant=DEMO','--tenant=SOUTH']),/Duplicate/);checks++;
+ eq([...exercised].sort(),commands);const mode=db.mode;await db.close();db=null;
+ const child=(script,args=[],status=0)=>{const p=spawnSync(process.execPath,[path.join(REPO_ROOT,'scripts',script),...args],{cwd:REPO_ROOT,env:process.env,encoding:'utf8'});if(p.status!==status)console.error(p.stdout,p.stderr);eq(p.status,status);return p;};
+ eq(JSON.parse(child('governance.mjs',['list','--tenant=DEMO','--json']).stdout).length,5);child('governance.mjs',['show','--tenant=DEMO','--ref=client'],1);child('governance.mjs',['list','--tenant=DEMO','--oops'],1);child('governance.mjs',['not-a-command'],1);
+ child('view.mjs');child('docs.mjs');ok(fs.existsSync(path.join(tmp,'views/week.html')));
+ const docFile=fs.readdirSync(path.join(tmp,'docs-out/governance-pack')).find(f=>f.startsWith('import-'));const html=fs.readFileSync(path.join(tmp,'docs-out/governance-pack',docFile),'utf8');ok(html.includes('&lt;script&gt;test&lt;/script&gt;'));ok(!html.includes('<script>test</script>'));
+ console.log(`PASS: ${commands.length} CLI commands, ${checks} assertions, ${mode}. CSV/XLSX import, rollback, snapshots, scope isolation, unknowns, holds, review gates, exports, drafts and HTML.`);
+}finally{if(db)await db.close();fs.rmSync(tmp,{recursive:true,force:true});}

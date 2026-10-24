@@ -1,0 +1,4 @@
+Object ID,Display Name,Service,Owner,Last Activity,Sharing Scope,Sensitivity Label,Retention Review,Legal Hold
+R-01,"Client, advisory",Teams,Casey,2026-01-01,external,confidential,2026-02-01,no
+R-02,Legacy project,SharePoint,,2025-06-01,anonymous,internal,2026-01-01,yes
+R-03,Operations,Teams,Jordan,2026-01-02,internal,internal,2027-01-01,no

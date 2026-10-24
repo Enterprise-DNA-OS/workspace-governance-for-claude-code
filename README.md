@@ -1,115 +1,104 @@
-<h1 align="center">Workspace Governance for Claude Code</h1>
+# Workspace Governance for Claude Code
 
-<p align="center">
-  <strong>The open-source workspace governance system that is just a database and Claude Code.</strong>
-</p>
+Know who owns each Microsoft 365 workspace, what has gone quiet and which sharing decisions still need evidence. Keep that review record in a database you own.
 
-<p align="center">
-  Created by <a href="https://www.enterprisedna.co"><strong>Enterprise DNA</strong></a>. Free and open source. Works with Claude Code, Codex, OpenCode or Cursor.
-</p>
+| Do it yourself | We customise it | We run it for you |
+|---|---|---|
+| Free under MIT. Install and run the demo. | Your Rencore exports, review rules, fields and documents. | Installed and operated through Omni by Enterprise DNA. One setup fee, then a retainer. |
 
-<!-- three-doors -->
-<table align="center">
-  <tr>
-    <td align="center"><strong>Do it yourself</strong><br/>Clone it, run it, own it. Free, MIT.<br/><a href="#quick-start">Quick start</a></td>
-    <td align="center"><strong>We customise it</strong><br/>Your fields, your rules, your Rencore Governance data brought across.<br/><a href="https://enterprisedna.co/omni/book/?utm_source=github&utm_medium=readme&utm_campaign=rencore-governance">Book a call</a></td>
-    <td align="center"><strong>We run it for you</strong><br/>Installed, connected and operated inside Omni. Setup fee, then a retainer.<br/><a href="https://enterprisedna.co/omni/instead-of/rencore-governance?utm_source=github&utm_medium=readme&utm_campaign=rencore-governance">How it works</a></td>
-  </tr>
-</table>
+[Get your version built](https://enterprisedna.co/omni/book/?offer=replace-software&utm_source=github&utm_medium=readme&utm_campaign=rencore-governance) · [Instead of Rencore Governance](https://enterprisedna.co/omni/instead-of/rencore-governance?utm_source=github&utm_medium=readme&utm_campaign=rencore-governance)
 
-<p align="center">
-  <a href="#what-is-this">What is this</a> &bull;
-  <a href="#why-no-front-end">Why no front end</a> &bull;
-  <a href="#quick-start">Quick start</a> &bull;
-  <a href="#the-commands">Commands</a> &bull;
-  <a href="#instead-of-rencore-governance">Instead of Rencore Governance</a> &bull;
-  <a href="#want-it-installed-and-run-for-you">Installed for you</a> &bull;
-  <a href="#license">License</a>
-</p>
+## Start with the weekly review
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Node-20+-339933?style=flat-square" alt="Node 20+" />
-  <img src="https://img.shields.io/badge/PostgreSQL-any-336791?style=flat-square" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/PGlite-embedded-3ecf8e?style=flat-square" alt="PGlite" />
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License" />
-</p>
-
----
-
-## What is this
-
-Workspace Governance for Claude Code does the job you pay Rencore Governance for, as a Postgres database and a set of agent commands. There is no web front end. You open the folder in [Claude Code](https://claude.com/claude-code) (or Codex, OpenCode, Cursor: see `AGENTS.md`) and ask for what you want in plain language. It runs the right query, and it can answer questions the Rencore Governance dashboard cannot.
-
-<!-- TODO(author): the annual bill. One sentence: what a 10 to 50 person business typically pays Rencore Governance per year, all in, with a source. -->
-
-Want the same thing with a web front end, or built on a different stack? That is a customisation, and it is exactly what Enterprise DNA does: [book a call](https://enterprisedna.co/omni/book/?utm_source=github&utm_medium=readme&utm_campaign=rencore-governance).
-
-<!-- TODO(author): two or three sentences on what this specific product covers and who it is for. -->
-
-## Why no front end
-
-- The front end was only ever there because the database was hard to talk to. That is no longer true.
-- Your data sits in plain Postgres tables you own. Any tool can read them. No export, no lock-in.
-- No seats, no tiers, no add-ons. Read [docs/why-no-front-end.md](docs/why-no-front-end.md) for the honest trade-offs too.
-
-## Quick start
-
-Sixty seconds, no database install (an embedded Postgres runs inside Node):
+Node 20 or later:
 
 ```bash
 git clone https://github.com/Enterprise-DNA-OS/workspace-governance-for-claude-code.git
 cd workspace-governance-for-claude-code
 npm install
 npm run demo
+npm run gov -- owner-gaps --tenant=DEMO
+npm run gov -- external-sharing --tenant=DEMO
+npm run docs
+npm run view
 ```
 
-Then open the folder in Claude Code and type a slash command. <!-- TODO(author): name the first command to try. -->
+Open this folder with Claude Code, Codex, OpenCode or Cursor. They share CLAUDE.md, AGENTS.md and the recipes in .claude/commands. PGlite runs locally without installing a database server. DATABASE_URL selects PostgreSQL and DATA_DIR selects a different local directory. Use a dedicated database with a trusted owner connection. Never seed real business data.
 
-### Use it with your own Postgres or Supabase
+The fictional Kauri Advisory example includes an ownerless SharePoint site on hold, confidential material shared externally, an overdue sharing review and incomplete evidence. A second scope has an old export. Unknown values remain unknown, so an incomplete export never becomes a clean result.
 
-Copy `.env.example` to `.env`, set `DATABASE_URL`, then `npm run migrate`. Same commands, shared data, no per-seat fee.
+## The five weekly jobs
 
-## The commands
+Check owner coverage, inspect inactive workspaces, review external sharing, review retention and holds, then close the evidence loop with the named reviewer. The Monday review combines the summary, attention list and review register. There are 27 CLI commands and 31 slash recipes, including drafts, documents, views and customisation.
 
-<!-- TODO(author): a table of the slash commands in .claude/commands and what each one does. -->
+Every scoped command needs --tenant. This selects a named review scope, not an authenticated tenant boundary. Use one export covering the agreed scope. The tool preserves each import as a dated snapshot and reconciles its row count. The latest snapshot drives current findings. Reviews stay attached to the snapshot that supported them and cannot be decided from superseded or stale evidence.
 
-| Command | What it does |
-|---|---|
-| `/...` | ... |
+Decision actors must match the assigned reviewer and differ from the opener. Completion requires a different verifier and evidence of work done outside this system. Names are supplied by the operator, not authenticated signatures. Nothing here connects to Microsoft, revokes access, archives a site, deletes records or sends messages.
 
-## Instead of rencore-governance
+## Ten questions this build answers
 
-<!-- TODO(author): how to bring data across from Rencore Governance; link docs/replace-rencore-governance.md -->
+These are tested questions, not claims that Rencore cannot answer them.
 
-## Architecture
+1. Which workspaces have no recorded accountable owner? owner-gaps
+2. Which workspaces have activity older than our own threshold? inactive
+3. Which externally shared workspaces hold confidential or restricted records? compliance
+4. Which workspaces have an unknown sharing setting? external-sharing
+5. Which retention reviews are due or missing? retention-due
+6. Which inactive workspaces are on hold? inactive
+7. Which review is overdue, and who owns it? reviews
+8. Which source export is too old to support a decision? compliance
+9. What changed between the last two imports? changes
+10. Who recorded a decision, reopened it or verified completion? activity
 
+## Bring your Rencore inventory
+
+Export the inventory data grid to Excel, including the columns needed for your agreed review scope. Rencore's report-definition export is not the data. Review actual headings and values, then import in one command:
+
+```bash
+npm run gov -- import rencore --tenant=FIRM --file=imports/workspaces.xlsx --source-on=2026-10-24 --expected=50 --map=imports/our-map.json --actor="Your name" --dry-run
 ```
-workspace-governance-for-claude-code/
-  CLAUDE.md                 how the operator wants this run (routing table + house rules)
-  AGENTS.md                 the same, for Codex / OpenCode / Cursor / Gemini CLI
-  .claude/commands/         the slash commands
-  scripts/                  the CLI the commands drive
-  scripts/lib/db.mjs        one adapter: DATABASE_URL (pg) or embedded PGlite
-  supabase/migrations/      plain SQL schema
-  supabase/seed.sql         demo data
-  docs/                     the thesis and the migration guide
-```
 
-## Built for coding agents
+Create the empty FIRM scope first with create-tenant. Replace the example date, row count and mapping with your actual export details. Remove --dry-run to save the validated snapshot. CSV is also supported. [Export steps, mapping, supported values and reconciliation](docs/replace-rencore-governance.md).
 
-The database, CLI and command recipes work with Claude Code, Codex, OpenCode or Cursor. Ask your coding agent for a new command and have it implement and test the change against the same records.
+The fixtures are synthetic importer examples, not genuine vendor exports. Configurable reports have different headings. Excel input accepts plain cells and dates, rejects formulas and rich content, and requires a sheet name when multiple sheets exist. The importer does not read files within a workspace, full member lists, permission inheritance, licensing invoices or automation definitions.
 
-## Contributing
+## Documents and views
 
-Issues and pull requests are welcome. Keep the shape: plain SQL, a small CLI, a slash command per recurring job, no front end.
+Change brand.json for the business name, colours and logo. npm run docs renders a governance review pack per scope and a decision record per review. npm run view renders the weekly desk and sharing/retention dashboards. These are private read-only HTML files containing all scopes in the database. Review before sharing and print to PDF locally when needed.
 
-## Want it installed and run for you?
+Export current inventory to CSV or the complete scope history to JSON. Existing output files are never overwritten. JSON is an archive, not a database restore format. Back up the underlying database for recovery.
 
-Enterprise DNA installs Workspace Governance for Claude Code for your business, migrates your Rencore Governance data, connects it to the rest of your tools, and runs it for you as part of **Omni**, our managed Command Center. One setup fee, then a monthly retainer.
+## Your first hour: ten things to ask for
 
-- Book a call: [enterprisedna.co/omni/book](https://enterprisedna.co/omni/book/?offer=replace-software&utm_source=github&utm_medium=readme&utm_campaign=rencore-governance)
-- Read more: [enterprisedna.co/omni/instead-of/rencore-governance](https://enterprisedna.co/omni/instead-of/rencore-governance?utm_source=github&utm_medium=readme&utm_campaign=rencore-governance)
+1. Put our business name on the review pack.
+2. Explain the ownerless site in the demo.
+3. Show where confidential records are shared externally.
+4. Check the headings in our inventory export.
+5. Import one agreed review scope with its source date.
+6. Set our internal inactivity threshold.
+7. List retention reviews that need an owner decision.
+8. Open a review for an inactive workspace on hold.
+9. Draft an owner follow-up without sending it.
+10. Add our internal business-unit field.
 
-## License
+/customise writes a forward migration and tests the requested change. /new-view adds a report through the shared renderer. [What a screen adds](docs/why-no-front-end.md).
 
-MIT. Copyright (c) 2026 Enterprise DNA.
+## Record checks and verification
+
+[Compliance references and limits](docs/compliance.md) explain the NZ and AU privacy principles behind the review prompts. These are evidence checks, not legal findings or a substitute for Microsoft controls. Internal review periods are configurable business rules, not statutory deadlines. A hold blocks an archive recommendation even when the workspace is old.
+
+npm test applies migrations and seed twice in a temporary database, then exercises all commands with spreadsheet imports, invalid rows, duplicate imports, scope isolation, stale snapshots, review transitions, drafts, exports and escaped HTML. The CI matrix runs Node 20/22 on Windows and Linux, plus PostgreSQL 17. [Verification record](docs/verification.md).
+
+ExcelJS uses the patched uuid 11 dependency through an explicit override. Its used v4 interface is exercised by the spreadsheet tests. No paid service or API key is needed.
+
+## Price context and fit
+
+Rencore's current pricing is privately quoted. Historical UK procurement establishes a five-figure annualised bill, not a current public tariff or a verified NZ/AU small-business invoice. [Research, six scores and scope](docs/research.md).
+
+This replaces an export-based workspace review process. Rencore also scans live environments and performs automated remediation. Enterprise DNA scopes those connections and controls separately when building your version. There is no claim of full platform parity.
+
+## Built and run for you
+
+Enterprise DNA maps the agreed history, builds your fields and review rules, and adds an authorised web view or live connections when agreed. Omni by Enterprise DNA runs it for one setup fee, then a retainer. [Book 30 minutes with Sam](https://enterprisedna.co/omni/book/?offer=replace-software&utm_source=github&utm_medium=readme&utm_campaign=rencore-governance).
+
+MIT. Not affiliated with Rencore, Microsoft or Anthropic. Hosting and coding-agent usage have their own costs.

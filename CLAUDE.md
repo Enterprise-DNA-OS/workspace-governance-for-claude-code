@@ -1,43 +1,55 @@
-# Workspace Governance for Claude Code: operating instructions
+# Workspace Governance for Claude Code
 
-This file is the brain. Claude Code reads it at the start of every session. It says who this is for, how work gets done, and the one right way to do each recurring job.
+An evidence review desk for Microsoft 365 workspace owners. The fictional demo is not a customer. Configure brand.json with the operator’s business identity.
 
-## Who this is for
+## Work from records
 
-- **Business:** [YOUR BUSINESS]
-- **Operator:** [YOUR NAME], [your role]
-- **What matters most:** [the one or two outcomes you care about]
+Read the CLI before answering. Require --tenant on every scoped operation. A tenant here is a named review scope, not an authenticated security boundary. Source dates, unknown fields and hold status must travel with every answer. Imported snapshots are preserved. A new snapshot does not carry forward old review decisions.
 
-Fill this in once. A worker with context knows. A worker without it guesses.
+## One route for every job
 
-## How to work
-
-1. **Take a brief, not a script.** The operator describes the outcome. You run the right command and present the answer.
-2. **Read before you write.** Before drafting anything about a record, read its full history first.
-3. **Plain language.** Short sentences. No filler. Numbers in tables.
-4. **Silent success, loud problems.** No play-by-play. Say what broke and what you did about it.
-5. **Stop at the line.** Anything that sends, deletes, or faces a customer waits for a yes in this session.
-
-## Routing table: one right way for each recurring job
-
-| When the operator asks for... | Use this |
+| Request | Recipe |
 |---|---|
-| <!-- TODO(author): one row per slash command --> | `/...` |
+| activity | /activity |
+| attention | /attention |
+| changes | /changes |
+| complete | /complete |
+| compliance | /compliance |
+| configure | /configure |
+| create tenant | /create-tenant |
+| customise | /customise |
+| decide | /decide |
+| docs | /docs |
+| draft decision | /draft-decision |
+| draft owner | /draft-owner |
+| export | /export |
+| external sharing | /external-sharing |
+| help | /help |
+| import | /import |
+| inactive | /inactive |
+| list | /list |
+| log | /log |
+| new view | /new-view |
+| open review | /open-review |
+| owner gaps | /owner-gaps |
+| reopen | /reopen |
+| retention due | /retention-due |
+| reviews | /reviews |
+| show | /show |
+| snapshots | /snapshots |
+| summary | /summary |
+| tenants | /tenants |
+| view | /view |
+| weekly review | /weekly-review |
 
-If an ask fits nothing here, run the CLI directly (`npm run <cli> -- --help`) and then propose a new command for it.
+## Boundaries
 
-## Hard rules
+Use scripts/governance.mjs for writes. Identify the actor and record the supplied evidence. Names are not authentication or electronic signatures. Do not record decisions or completion without an operator instruction for the actual review. The completion step records external verification, never executes a tenant action. No sends, live connections, automated permission changes or deletion.
 
-- Never send email or messages from here. Draft to `drafts/`, a person sends.
-- Never delete records without an explicit yes in this session. Prefer marking closed or archived.
-- Never invent a record. If a name is ambiguous, list the candidates and ask.
-- The database is the source of truth. If the answer is not in it, say so.
+Use a dedicated database and a trusted operator account. Database owners can change history. RLS blocks ungranted roles, but this is not a hosted multi-user permission system. Reports include every scope. Never seed a real business database. Back up the database and source exports securely.
 
-## Where things live
+## Files and checks
 
-- `scripts/` the CLI. `scripts/lib/db.mjs` picks `DATABASE_URL` (Postgres, Supabase) or the embedded database in `.data/`.
-- `supabase/migrations/` the schema, plain SQL. `npm run migrate` applies it.
-- `.claude/commands/` the slash commands. Add one every time the same ask comes twice.
-- `docs/` the thesis and the guide for moving off Rencore Governance.
+Migrations live in supabase/migrations, the seed in supabase/seed.sql and one CLI in scripts/governance.mjs. AGENTS.md routes every coding agent to this file and the same .claude/commands library. npm test uses an isolated database. Read docs/compliance.md and docs/replace-rencore-governance.md.
 
-Built by Enterprise DNA. Installed and run for you as part of Omni: https://enterprisedna.co/omni/instead-of/rencore-governance
+Omni by Enterprise DNA installs, customises and runs this system for one setup fee, then a retainer: https://enterprisedna.co/omni/book/?offer=replace-software&utm_campaign=rencore-governance

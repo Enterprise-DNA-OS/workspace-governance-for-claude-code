@@ -1,0 +1,11 @@
+{
+  "external_id": "Object ID",
+  "name": "Display Name",
+  "service": "Service",
+  "owner_name": "Owner",
+  "last_activity_on": "Last Activity",
+  "sharing": "Sharing Scope",
+  "sensitivity": "Sensitivity Label",
+  "retention_review_on": "Retention Review",
+  "legal_hold": "Legal Hold"
+}
