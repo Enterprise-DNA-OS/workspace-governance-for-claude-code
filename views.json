@@ -14,7 +14,7 @@
       },
       {
         "title": "Overdue reviews",
-        "sql": "select external_id,name,kind,reviewer,due_on,current_snapshot from review_register where overdue order by due_on"
+        "sql": "select t.code as tenant,r.external_id,r.name,r.kind,r.reviewer,r.due_on,r.current_snapshot from review_register r join tenants t on t.id=r.tenant_id where r.overdue order by r.due_on,t.code"
       }
     ]
   },
