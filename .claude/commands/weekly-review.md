@@ -1,3 +1,7 @@
+---
+description: "Workspace governance: weekly review. Use the documented CLI recipe and report the evidence."
+---
+
 # weekly-review
 
 This combines summary, attention and reviews. Present the Monday priorities with the accountable person and source date.

@@ -1,3 +1,7 @@
+---
+description: "Workspace governance: complete. Use the documented CLI recipe and report the evidence."
+---
+
 # complete
 
 Read the decision first. Record only external completion the operator actually verified. The verifier must differ from the decision actor. This does not execute a Microsoft change.

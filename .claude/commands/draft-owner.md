@@ -1,3 +1,7 @@
+---
+description: "Workspace governance: draft owner. Use the documented CLI recipe and report the evidence."
+---
+
 # draft-owner
 
 Read the records first and report unknowns explicitly. Use the selected scope, never infer one.

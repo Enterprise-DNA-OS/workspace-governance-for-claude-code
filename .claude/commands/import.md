@@ -1,3 +1,7 @@
+---
+description: "Workspace governance: import. Use the documented CLI recipe and report the evidence."
+---
+
 # import
 
 Read docs/replace-rencore-governance.md. Reconcile the export row count and selected scope, inspect headings and value vocabularies, then do a dry run. Import only when the operator requested it. Never silently invent missing fields.

@@ -1,3 +1,7 @@
+---
+description: "Workspace governance: changes. Use the documented CLI recipe and report the evidence."
+---
+
 # changes
 
 Read the records first and report unknowns explicitly. Use the selected scope, never infer one.

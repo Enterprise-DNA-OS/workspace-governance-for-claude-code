@@ -1,3 +1,7 @@
+---
+description: "Workspace governance: inactive. Use the documented CLI recipe and report the evidence."
+---
+
 # inactive
 
 Read the records first and report unknowns explicitly. Use the selected scope, never infer one.

@@ -1,3 +1,7 @@
+---
+description: "Workspace governance: attention. Use the documented CLI recipe and report the evidence."
+---
+
 # attention
 
 Read the records first and report unknowns explicitly. Use the selected scope, never infer one.

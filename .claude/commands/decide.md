@@ -1,3 +1,7 @@
+---
+description: "Workspace governance: decide. Use the documented CLI recipe and report the evidence."
+---
+
 # decide
 
 Read the workspace and review first. Record only the assigned reviewer’s actual decision and evidence. Holds block archive recommendations.

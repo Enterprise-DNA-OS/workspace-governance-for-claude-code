@@ -1,3 +1,7 @@
+---
+description: "Workspace governance: retention due. Use the documented CLI recipe and report the evidence."
+---
+
 # retention-due
 
 Read the records first and report unknowns explicitly. Use the selected scope, never infer one.
